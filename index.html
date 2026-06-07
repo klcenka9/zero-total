@@ -488,8 +488,14 @@ function copyShareLink() {
   const rid  = $('reportIdDisplay').textContent.replace('REPORT #','');
 
   const base = window.location.origin;
-  const url = base + '/report?name=' + encodeURIComponent(name)
-            + '&size=' + encodeURIComponent(size)
+  const isStreamlit = window.location.hostname.includes('streamlit.app') || window.location.hostname.includes('share.streamlit');
+  let url;
+  if (isStreamlit) {
+    url = base + '/?report&name=' + encodeURIComponent(name);
+  } else {
+    url = base + '/report?name=' + encodeURIComponent(name);
+  }
+  url += '&size=' + encodeURIComponent(size)
             + '&type=' + encodeURIComponent(type)
             + '&id=' + encodeURIComponent(rid);
 
