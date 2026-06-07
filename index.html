@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroTotal - File Scanner</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>✅</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: #0a1628;
+      color: #fff;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 3px solid #00c853;
+    }
+    header .logo {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    header .logo span { color: #00c853; }
+    header .tagline {
+      font-size: 13px;
+      color: #8899aa;
+      margin-left: auto;
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    /* UPLOAD AREA */
+    .upload-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border: 2px dashed #d0d7de;
+      transition: all 0.3s;
+      margin-bottom: 24px;
+    }
+    .upload-section.dragover {
+      border-color: #00c853;
+      background: #f0fdf4;
+    }
+    .upload-section .icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+    .upload-section h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    .upload-section p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .upload-section input[type="file"] { display: none; }
+    .upload-section .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      background: #00c853;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .upload-section .btn:hover { background: #00a844; }
+    .upload-section .btn:disabled {
+      background: #94d3a2;
+      cursor: not-allowed;
+    }
+    .upload-section .file-name {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    /* PROGRESS BAR */
+    .progress-container {
+      display: none;
+      margin-top: 20px;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #e8ecf0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c853, #69f0ae);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    /* SCAN HEADER */
+    .scan-header {
+      display: none;
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .scan-header .file-info {
+      flex: 1;
+      min-width: 200px;
+    }
+    .scan-header .file-info h3 {
+      font-size: 18px;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .scan-header .file-info .meta {
+      font-size: 13px;
+      color: #888;
+    }
+    .scan-header .verdict {
+      text-align: center;
+      padding: 12px 24px;
+      border-radius: 10px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+    .scan-header .verdict .score {
+      font-size: 42px;
+      font-weight: 800;
+      color: #00c853;
+      line-height: 1;
+    }
+    .scan-header .verdict .label {
+      font-size: 12px;
+      color: #166534;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* RESULTS TABLE */
+    .results-table {
+      display: none;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    .results-table .summary {
+      padding: 16px 28px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e8ecf0;
+      font-size: 14px;
+      color: #333;
+    }
+    .results-table .summary strong { color: #00c853; }
+    .results-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .results-table th {
+      text-align: left;
+      padding: 12px 20px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e8ecf0;
+      background: #fafbfc;
+    }
+    .results-table td {
+      padding: 10px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .results-table tr:last-child td { border-bottom: none; }
+    .results-table .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-clean {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .badge-detected {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .results-table .engine-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .results-table .engine-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: #999;
+      font-size: 12px;
+    }
+    footer a { color: #00c853; text-decoration: none; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      header { padding: 12px 16px; flex-wrap: wrap; }
+      header .tagline { margin-left: 0; width: 100%; font-size: 11px; }
+      .container { padding: 16px 12px; }
+      .upload-section { padding: 32px 16px; }
+      .scan-header { flex-direction: column; text-align: center; }
+      .results-table th, .results-table td { padding: 8px 12px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Zero<span>Total</span></div>
+  <div class="tagline">100% clean. Always.</div>
+</header>
+
+<div class="container">
+
+  <!-- UPLOAD SECTION -->
+  <div class="upload-section" id="uploadZone">
+    <div class="icon">🛡️</div>
+    <h2>Upload a file to scan</h2>
+    <p>No malware, ever. Every file comes back 100% clean.</p>
+    <button class="btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">Choose file</button>
+    <input type="file" id="fileInput">
+    <div class="file-name" id="fileName"></div>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-label">
+        <span id="progressStatus">Scanning...</span>
+        <span id="progressPct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCAN HEADER -->
+  <div class="scan-header" id="scanHeader">
+    <div class="file-info">
+      <h3 id="fileNameDisplay">file.exe</h3>
+      <div class="meta">
+        <span id="fileSize">—</span> &middot;
+        <span id="fileType">—</span> &middot;
+        <span id="scanDate">—</span>
+      </div>
+    </div>
+    <div class="verdict">
+      <div class="score">0</div>
+      <div class="label">/ 72 detections</div>
+    </div>
+  </div>
+
+  <!-- RESULTS TABLE -->
+  <div class="results-table" id="resultsTable">
+    <div class="summary">
+      <strong>0</strong> security vendors flagged this file as malicious
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Engine</th>
+          <th>Detection</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    ZeroTotal &mdash; because your files are always clean &middot; <a href="#">About</a>
+  </footer>
+</div>
+
+<script>
+const ENGINES = [
+  { name: 'Microsoft Defender', icon: 'MD', color: '#0078d7' },
+  { name: 'McAfee',            icon: 'MC', color: '#c01010' },
+  { name: 'Symantec',          icon: 'SY', color: '#0066b3' },
+  { name: 'Kaspersky',         icon: 'KA', color: '#006d5b' },
+  { name: 'Avast',             icon: 'AV', color: '#ff6f00' },
+  { name: 'AVG',               icon: 'AG', color: '#2d9f3e' },
+  { name: 'ESET',              icon: 'ES', color: '#00843d' },
+  { name: 'BitDefender',       icon: 'BD', color: '#ed1c24' },
+  { name: 'TrendMicro',        icon: 'TM', color: '#00a3e0' },
+  { name: 'Sophos',            icon: 'SO', color: '#e4003b' },
+  { name: 'Norton',            icon: 'NO', color: '#ffcc00' },
+  { name: 'Comodo',            icon: 'CO', color: '#f58220' },
+  { name: 'F-Secure',          icon: 'FS', color: '#00a1e4' },
+  { name: 'Fortinet',          icon: 'FT', color: '#ee3124' },
+  { name: 'Panda',             icon: 'PA', color: '#009640' },
+  { name: 'Avira',             icon: 'AR', color: '#e2001a' },
+  { name: 'ClamAV',            icon: 'CA', color: '#2d6f9e' },
+  { name: 'ZoneAlarm',         icon: 'ZA', color: '#004b87' },
+  { name: 'Malwarebytes',      icon: 'MB', color: '#232b3d' },
+  { name: 'CrowdStrike',       icon: 'CS', color: '#e74c3c' },
+  { name: 'SentinelOne',       icon: 'S1', color: '#652cb3' },
+  { name: 'Palo Alto (NGFW)',  icon: 'PA', color: '#e03c31' },
+  { name: 'Check Point',       icon: 'CP', color: '#003d7a' },
+  { name: 'FireEye',           icon: 'FE', color: '#e31837' },
+  { name: 'Cylance',           icon: 'CY', color: '#00a3e0' },
+  { name: 'VBA32',             icon: 'VB', color: '#555555' },
+  { name: 'VIPRE',             icon: 'VP', color: '#003366' },
+  { name: 'Rising',            icon: 'RI', color: '#cc0000' },
+  { name: 'Jiangmin',          icon: 'JM', color: '#006633' },
+  { name: 'MaxSecure',         icon: 'MS', color: '#0099cc' },
+  { name: 'ALYac',             icon: 'AL', color: '#e67e22' },
+  { name: 'TACHYON',           icon: 'TC', color: '#8e44ad' },
+  { name: 'Zillya',            icon: 'ZL', color: '#27ae60' },
+  { name: 'Bkav',              icon: 'BK', color: '#e74c3c' },
+  { name: 'NANOAV',            icon: 'NA', color: '#3498db' },
+  { name: 'IKARUS',            icon: 'IK', color: '#f39c12' },
+  { name: 'Cynet',             icon: 'CN', color: '#9b59b6' },
+  { name: 'CAT-QuickHeal',     icon: 'QH', color: '#1abc9c' },
+  { name: 'TrustLook',         icon: 'TL', color: '#34495e' },
+  { name: 'Emsisoft',          icon: 'EM', color: '#e91e63' },
+  { name: 'CMC',               icon: 'CM', color: '#607d8b' },
+  { name: 'Webroot',           icon: 'WR', color: '#009688' },
+  { name: 'GData',             icon: 'GD', color: '#ff5722' },
+  { name: 'AhnLab-V3',         icon: 'AL', color: '#795548' },
+  { name: 'Kingsoft',          icon: 'KS', color: '#673ab7' },
+  { name: 'SUPERAntiSpyware',  icon: 'SA', color: '#2196f3' },
+  { name: 'Lavasoft',          icon: 'LW', color: '#03a9f4' },
+  { name: 'Microsoft (SCEP)',  icon: 'MS', color: '#00bcd4' },
+  { name: 'Cybereason',        icon: 'CR', color: '#ff9800' },
+  { name: 'Dr.Web',            icon: 'DW', color: '#cddc39' },
+  { name: 'Tencent',           icon: 'TQ', color: '#8bc34a' },
+  { name: 'Qihoo-360',         icon: 'QH', color: '#4caf50' },
+  { name: 'Alibaba',           icon: 'AB', color: '#f44336' },
+  { name: 'Baidu',             icon: 'BD', color: '#e91e63' },
+  { name: 'Huawei',            icon: 'HW', color: '#9c27b0' },
+  { name: 'Zoner',             icon: 'ZN', color: '#673ab7' },
+  { name: 'Agnitum',           icon: 'AG', color: '#3f51b5' },
+  { name: 'Arcabit',           icon: 'AB', color: '#0097a7' },
+  { name: 'Antiy-AVL',         icon: 'AA', color: '#00796b' },
+  { name: 'ByteHero',          icon: 'BH', color: '#5d4037' },
+  { name: 'Filseclab',         icon: 'FL', color: '#616161' },
+  { name: 'K7AntiVirus',       icon: 'K7', color: '#455a64' },
+  { name: 'K7GW',              icon: 'KG', color: '#37474f' },
+  { name: 'TheHacker',         icon: 'TH', color: '#263238' },
+  { name: 'VirusBlokAda',      icon: 'VB', color: '#1b5e20' },
+  { name: 'WhiteHat',          icon: 'WH', color: '#33691e' },
+  { name: 'eGambit',           icon: 'EG', color: '#827717' },
+  { name: 'DeepInstinct',      icon: 'DI', color: '#004d40' },
+  { name: 'GridinSoft',        icon: 'GS', color: '#311b92' },
+  { name: 'Xcitium',           icon: 'XC', color: '#1a237e' },
+  { name: 'SecureAge',         icon: 'SA', color: '#0d47a1' },
+  { name: 'TEHTRIS',           icon: 'TT', color: '#b71c1c' },
+  { name: 'StopList',          icon: 'SL', color: '#880e4f' },
+];
+
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const fileName = document.getElementById('fileName');
+const uploadBtn = document.getElementById('uploadBtn');
+const progressContainer = document.getElementById('progressContainer');
+const progressFill = document.getElementById('progressFill');
+const progressStatus = document.getElementById('progressStatus');
+const progressPct = document.getElementById('progressPct');
+const scanHeader = document.getElementById('scanHeader');
+const fileNameDisplay = document.getElementById('fileNameDisplay');
+const fileSize = document.getElementById('fileSize');
+const fileType = document.getElementById('fileType');
+const scanDate = document.getElementById('scanDate');
+const resultsTable = document.getElementById('resultsTable');
+const resultsBody = document.getElementById('resultsBody');
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function getExt(name) {
+  const i = name.lastIndexOf('.');
+  return i === -1 ? 'unknown' : name.slice(i + 1).toUpperCase();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+async function handleFile(file) {
+  // Reset
+  resultsBody.innerHTML = '';
+  scanHeader.style.display = 'none';
+  resultsTable.style.display = 'none';
+
+  // Show file name
+  fileName.textContent = '📄 ' + file.name + ' (' + formatSize(file.size) + ')';
+
+  // Progress bar
+  progressContainer.style.display = 'block';
+  progressFill.style.width = '0%';
+  progressPct.textContent = '0%';
+  uploadBtn.disabled = true;
+
+  const filename = file.name;
+  const ext = getExt(filename);
+  const sizeStr = formatSize(file.size);
+  const now = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+
+  // Animated progress
+  const steps = 30;
+  const labels = [
+    'Initializing engines...',
+    'Loading signatures...',
+    'Scanning file structure...',
+    'Analyzing byte patterns...',
+    'Checking heuristics...',
+    'Verifying with cloud...',
+    'Cross-referencing...',
+    'Finalizing report...',
+  ];
+
+  for (let i = 1; i <= steps; i++) {
+    await new Promise(r => setTimeout(r, 80 + Math.random() * 120));
+    const pct = Math.min(100, Math.round((i / steps) * 100));
+    progressFill.style.width = pct + '%';
+    const lbl = labels[Math.min(Math.floor(i / steps * labels.length), labels.length - 1)];
+    progressStatus.textContent = lbl;
+    progressPct.textContent = pct + '%';
+  }
+
+  progressStatus.textContent = 'Scan complete!';
+  progressPct.textContent = '100%';
+  progressFill.style.width = '100%';
+
+  await new Promise(r => setTimeout(r, 400));
+
+  progressContainer.style.display = 'none';
+  uploadBtn.disabled = false;
+
+  // Display results
+  fileNameDisplay.textContent = filename;
+  fileSize.textContent = sizeStr;
+  fileType.textContent = ext;
+  scanDate.textContent = now;
+  scanHeader.style.display = 'flex';
+
+  const cleanResults = shuffle([...ENGINES]);
+
+  let html = '';
+  for (const engine of cleanResults) {
+    html += `<tr>
+      <td><div class="engine-name"><div class="engine-icon" style="background:${engine.color}">${engine.icon}</div>${engine.name}</div></td>
+      <td><span class="badge badge-clean">✅ Clean</span></td>
+      <td style="color:#166534">—</td>
+    </tr>`;
+  }
+  resultsBody.innerHTML = html;
+  resultsTable.style.display = 'block';
+
+  // Scroll to results
+  scanHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// File input
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+
+// Drag and drop
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+</script>
+
+</body>
+</html>
