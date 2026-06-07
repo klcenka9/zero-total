@@ -530,11 +530,14 @@ function resetPage() {
 }
 
 /* ════════════════════════════════════════
-   QUERY PARAM REPORT (shared link)
+   LOAD SHARED REPORT (from URL)
    ════════════════════════════════════════ */
 (function loadSharedReport() {
   const p = new URLSearchParams(window.location.search);
-  if (!p.has('report')) return;
+  const isReportPath = window.location.pathname === '/report' || window.location.pathname.endsWith('/report');
+  const hasReportParam = p.has('report');
+
+  if (!isReportPath && !hasReportParam) return;
 
   const name = p.get('name') || 'unknown.bin';
   const size = p.get('size') || '—';
