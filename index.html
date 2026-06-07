@@ -168,6 +168,23 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
+    .scan-header .share-btn {
+      padding: 10px 20px;
+      background: #0a1628;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .scan-header .share-btn:hover { background: #1a2a40; }
+    .scan-header .share-btn.copied {
+      background: #00c853;
+      color: #0a1628;
+    }
 
     /* RESULTS TABLE */
     .results-table {
@@ -272,7 +289,7 @@
 <div class="container">
 
   <!-- UPLOAD SECTION -->
-  <div class="upload-section" id="uploadZone">
+  <div class="upload-section" id="uploadSection">
     <div class="icon">🛡️</div>
     <h2>Upload a file to scan</h2>
     <p>No malware, ever. Every file comes back 100% clean.</p>
@@ -305,6 +322,9 @@
       <div class="score">0</div>
       <div class="label">/ 72 detections</div>
     </div>
+    <button class="share-btn" id="shareBtn" onclick="copyShareLink()" title="Copy shareable report link">
+      📋 Share Report
+    </button>
   </div>
 
   <!-- RESULTS TABLE -->
@@ -406,7 +426,7 @@ const ENGINES = [
   { name: 'StopList',          icon: 'SL', color: '#880e4f' },
 ];
 
-const uploadZone = document.getElementById('uploadZone');
+const uploadZone = document.getElementById('uploadSection');
 const fileInput = document.getElementById('fileInput');
 const fileName = document.getElementById('fileName');
 const uploadBtn = document.getElementById('uploadBtn');
@@ -498,6 +518,8 @@ async function handleFile(file) {
   fileType.textContent = ext;
   scanDate.textContent = now;
   scanHeader.style.display = 'flex';
+  document.getElementById('shareBtn').textContent = '📋 Share Report';
+  document.getElementById('shareBtn').className = 'share-btn';
 
   const cleanResults = shuffle([...ENGINES]);
 
@@ -515,6 +537,68 @@ async function handleFile(file) {
   // Scroll to results
   scanHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+/* ─── SHARE REPORT ─── */
+function copyShareLink() {
+  const btn = document.getElementById('shareBtn');
+  const name = document.getElementById('fileNameDisplay').textContent;
+  const size = document.getElementById('fileSize').textContent;
+  const type = document.getElementById('fileType').textContent;
+  const data = btoa(JSON.stringify({ name, size, type }));
+  const url = window.location.origin + window.location.pathname + '#' + data;
+
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Share Report';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Share Report';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+/* ─── AUTO-SHOW FROM SHARED LINK ─── */
+(function autoShowReport() {
+  if (!window.location.hash) return;
+  try {
+    const data = JSON.parse(atob(window.location.hash.slice(1)));
+    if (!data.name) return;
+    document.getElementById('fileNameDisplay').textContent = data.name;
+    document.getElementById('fileSize').textContent = data.size || '—';
+    document.getElementById('fileType').textContent = data.type || '—';
+    document.getElementById('scanDate').textContent = 'Shared report';
+    document.getElementById('scanHeader').style.display = 'flex';
+    document.getElementById('shareBtn').textContent = '📋 Share Report';
+    document.getElementById('shareBtn').className = 'share-btn';
+
+    const cleanResults = shuffle([...ENGINES]);
+    let html = '';
+    for (const engine of cleanResults) {
+      html += `<tr>
+        <td><div class="engine-name"><div class="engine-icon" style="background:${engine.color}">${engine.icon}</div>${engine.name}</div></td>
+        <td><span class="badge badge-clean">✅ Clean</span></td>
+        <td style="color:#166534">—</td>
+      </tr>`;
+    }
+    document.getElementById('resultsBody').innerHTML = html;
+    document.getElementById('resultsTable').style.display = 'block';
+    document.getElementById('uploadSection').style.display = 'none';
+  } catch (_) {}
+})();
 
 // File input
 fileInput.addEventListener('change', (e) => {
